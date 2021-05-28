@@ -1,0 +1,308 @@
+name: Docker
+
+on:
+  # Run CI for this branch and all PRs
+  push:
+    branches:
+      - '*-gh-actions'
+      - riscv-to-upstream
+  pull_request:
+
+jobs:
+  build-u500:
+    name: Build U500 firmware image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Cache edk2 clone
+        id: cache-edk2
+        uses: actions/cache@v2
+        with:
+          path: |
+            edk2
+          key: edk2-commit-b480ef53e8a3bc16e07805a6c8aca4f59276723b
+
+      - uses: actions/checkout@v2
+        if: steps.cache-edk2.outputs.cache-hit != 'true'
+        with:
+          repository: riscv/riscv-edk2
+          ref: b480ef53e8a3bc16e07805a6c8aca4f59276723b # branch riscv-to-upstream
+          submodules: true
+          path: edk2
+
+      - name: Pull image
+        run: docker pull ghcr.io/johnazoidberg/riscv-edk2:latest
+
+      - name: Make build directory to access build results
+        run: mkdir Build
+
+      - name: Build U500
+        run: |
+          docker run --rm \
+            -v $(pwd)/Build:/Build \
+            -v $(pwd)/:/edk2-platforms \
+            -v $(pwd)/edk2:/edk2 \
+            -i ghcr.io/johnazoidberg/riscv-edk2:latest \
+            /edk2-platforms/build-edk2.sh \
+            Platform/SiFive/U5SeriesPkg/FreedomU500VC707Board/U500.dsc
+
+      - name: Check if FD files are there
+        run: ls -l Build/FreedomU500VC707/DEBUG_GCC5/FV/U500.fd
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: U500.fd
+          path: Build/FreedomU500VC707/DEBUG_GCC5/FV/U500.fd
+
+  build-u540:
+    name: Build U540 firmware image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Cache edk2 clone
+        id: cache-edk2
+        uses: actions/cache@v2
+        with:
+          path: |
+            edk2
+          key: edk2-commit-b480ef53e8a3bc16e07805a6c8aca4f59276723b
+
+      - uses: actions/checkout@v2
+        if: steps.cache-edk2.outputs.cache-hit != 'true'
+        with:
+          repository: riscv/riscv-edk2
+          ref: b480ef53e8a3bc16e07805a6c8aca4f59276723b # branch riscv-to-upstream
+          submodules: true
+          path: edk2
+
+      - name: Pull image
+        run: docker pull ghcr.io/johnazoidberg/riscv-edk2:latest
+
+      - name: Make build directory to access build results
+        run: mkdir Build
+
+      - name: Build U540
+        run: |
+          docker run --rm \
+            -v $(pwd)/Build:/Build \
+            -v $(pwd)/:/edk2-platforms \
+            -v $(pwd)/edk2:/edk2 \
+            -i ghcr.io/johnazoidberg/riscv-edk2:latest \
+            /edk2-platforms/build-edk2.sh \
+            Platform/SiFive/U5SeriesPkg/FreedomU540HiFiveUnleashedBoard/U540.dsc
+
+      - name: Check if FD files are there
+        run: ls -l Build/FreedomU540HiFiveUnleashed/DEBUG_GCC5/FV/U540.fd
+
+      - name: Copy FD to own directory to avoid uploading everything else
+        run: |
+          mkdir U540-FV
+          cp Build/FreedomU540HiFiveUnleashed/DEBUG_GCC5/FV/U540.fd U540-FV/
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: U540
+          path: U540-FV
+
+  build-beaglev:
+    name: Build BeagleV firmware image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Cache edk2 clone
+        id: cache-edk2
+        uses: actions/cache@v2
+        with:
+          path: |
+            edk2
+          key: edk2-commit-b480ef53e8a3bc16e07805a6c8aca4f59276723b
+
+      - uses: actions/checkout@v2
+        if: steps.cache-edk2.outputs.cache-hit != 'true'
+        with:
+          repository: riscv/riscv-edk2
+          ref: b480ef53e8a3bc16e07805a6c8aca4f59276723b # branch riscv-to-upstream
+          submodules: true
+          path: edk2
+
+      - name: Pull image
+        run: docker pull ghcr.io/johnazoidberg/riscv-edk2:latest
+
+      - name: Make build directory to access build results
+        run: mkdir Build
+
+      - name: Build BeagleV
+        run: |
+          docker run --rm \
+            -v $(pwd)/Build:/Build \
+            -v $(pwd)/:/edk2-platforms \
+            -v $(pwd)/edk2:/edk2 \
+            -i ghcr.io/johnazoidberg/riscv-edk2:latest \
+            /edk2-platforms/build-edk2.sh \
+            Platform/BeagleV/BeagleV.dsc
+
+      - name: Check if FD files are there
+        run: ls -l Build/BeagleV/DEBUG_GCC5/FV/BEAGLEV.fd
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: BEAGLEV.fd
+          path: Build/BeagleV/DEBUG_GCC5/FV/BEAGLEV.fd
+
+  build-virt:
+    name: Build QEMU RiscvVirt firmware image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Cache edk2 clone
+        id: cache-edk2
+        uses: actions/cache@v2
+        with:
+          path: |
+            edk2
+          key: edk2-commit-b480ef53e8a3bc16e07805a6c8aca4f59276723b
+
+      - uses: actions/checkout@v2
+        if: steps.cache-edk2.outputs.cache-hit != 'true'
+        with:
+          repository: riscv/riscv-edk2
+          ref: b480ef53e8a3bc16e07805a6c8aca4f59276723b # branch riscv-to-upstream
+          submodules: true
+          path: edk2
+
+      - name: Pull image
+        run: docker pull ghcr.io/johnazoidberg/riscv-edk2:latest
+
+      - name: Make build directory to access build results
+        run: mkdir Build
+
+      - name: Build RiscvVirt
+        run: |
+          docker run --rm \
+            -v $(pwd)/Build:/Build \
+            -v $(pwd)/:/edk2-platforms \
+            -v $(pwd)/edk2:/edk2 \
+            -i ghcr.io/johnazoidberg/riscv-edk2:latest \
+            /edk2-platforms/build-edk2.sh \
+            Platform/Qemu/RiscvVirt/RiscvVirt.dsc
+
+      - name: Check if FD files are there
+        run: ls -l Build/RiscvVirt/DEBUG_GCC5/FV/RISCVVIRT.fd
+
+
+      - name: Copy FD to own directory to avoid uploading everything else
+        run: |
+          mkdir RISCVVIRT-FV
+          cp Build/RiscvVirt/DEBUG_GCC5/FV/RISCVVIRT.fd RISCVVIRT-FV/
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: RiscvVirt
+          path: RISCVVIRT-FV
+
+  test-u540:
+    name: Boot U540 to UEFI Shell
+    runs-on: ubuntu-latest
+    needs: build-u540
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: U540
+          path: U540-FV
+
+      - name: Chmod U540.fd
+        run: chmod +w U540-FV/U540.fd
+
+      # Call the custom action in this repo at /action.yml
+      - uses: ./
+        with:
+          entrypoint: './run-u540.sh'
+
+  test-virt:
+    name: Boot RiscvVirt to UEFI Shell
+    runs-on: ubuntu-latest
+    needs: build-virt
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: RiscvVirt
+          path: RISCVVIRT-FV
+
+      - name: Chmod RISCVVIRT.fd
+        run: chmod +w RISCVVIRT-FV/RISCVVIRT.fd
+
+      # Call the custom action in this repo at /action.yml
+      - uses: ./
+        with:
+          entrypoint: './run-virt.sh'
+
+  test-virt-linux:
+    name: Boot RiscvVirt to Linux
+    runs-on: ubuntu-latest
+    needs: build-virt
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: RiscvVirt
+          path: RISCVVIRT-FV
+
+      - name: Chmod RISCVVIRT.fd
+        run: chmod +w RISCVVIRT-FV/RISCVVIRT.fd
+
+      - name: Cache EFISTUB, initrd, and rootfs
+        id: cache-efistub-initrd-rootfs
+        uses: actions/cache@v2
+        with:
+          path: |
+            Image
+            rootfs.cpio
+            rootfs.ext2
+          # Hash generated by: $ cat Image rootfs.cpio rootfs.ext2 | sha256sum
+          key: c8f4654fc81701676f11f7d6ed13349eb308cc4d73ca0db283103af52dfd5406
+
+      - name: Get prebuilt Linux EFISTUB, initrd, and rootfs
+        if: steps.cache-efistub-initrd-rootfs.outputs.cache-hit != 'true'
+        run: |
+          wget https://danielschaefer.me/static/riscv/ci/Image
+          wget https://danielschaefer.me/static/riscv/ci/rootfs.cpio
+          wget https://danielschaefer.me/static/riscv/ci/rootfs.ext2
+
+      - name: Prepare ESP
+        run: |
+          mkdir fs_esp
+
+          # Copy EFISTUB and initrd to ESP
+          sudo cp Image fs_esp/linux-riscv64.efi
+          sudo cp rootfs.cpio fs_esp/initramfs.cpio
+
+          # Create autostart script
+          echo 'fs0:' | sudo tee fs_esp/startup.nsh
+          echo 'initrd initramfs.cpio' | sudo tee -a fs_esp/startup.nsh
+          echo 'linux-riscv64.efi root=/dev/vda rootwait earlycon' | sudo tee -a fs_esp/startup.nsh
+
+      # Call the custom action in this repo at /action.yml
+      - uses: ./
+        with:
+          entrypoint: './run-virt-linux.sh'

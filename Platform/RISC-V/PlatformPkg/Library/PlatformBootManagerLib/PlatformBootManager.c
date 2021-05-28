@@ -156,6 +156,11 @@ PlatformBootManagerBeforeConsole (
   EFI_BOOT_MANAGER_LOAD_OPTION BootOption;
 
   //
+  // Signal EndOfDxe PI Event
+  //
+  EfiEventGroupSignal (&gEfiEndOfDxeEventGroupGuid);
+
+  //
   // Update the console variables.
   //
   for (Index = 0; gPlatformConsole[Index].DevicePath != NULL; Index++) {

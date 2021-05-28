@@ -99,7 +99,7 @@ INF  MdeModulePkg/Universal/StatusCodeHandler/Pei/StatusCodeHandlerPei.inf
 INF  MdeModulePkg/Core/DxeIplPeim/DxeIpl.inf
 
 # RISC-V Platform PEI Driver
-INF  Platform/SiFive/U5SeriesPkg/FreedomU500VC707Board/Universal/Pei/PlatformPei/PlatformPei.inf
+INF  Platform/RISC-V/PlatformPkg/Universal/Pei/PlatformPei/PlatformPei.inf
 
 ################################################################################
 

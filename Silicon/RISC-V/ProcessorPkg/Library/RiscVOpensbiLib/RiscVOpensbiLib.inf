@@ -23,6 +23,7 @@
   opensbi/lib/sbi/sbi_bitmap.c
   opensbi/lib/sbi/sbi_bitops.c
   opensbi/lib/sbi/sbi_console.c
+  opensbi/lib/sbi/sbi_domain.c
   opensbi/lib/sbi/sbi_ecall.c
   opensbi/lib/sbi/sbi_ecall_base.c
   opensbi/lib/sbi/sbi_ecall_hsm.c
@@ -51,6 +52,7 @@
 
   opensbi/lib/utils/fdt/fdt_helper.c
   opensbi/lib/utils/fdt/fdt_fixup.c
+  opensbi/lib/utils/fdt/fdt_domain.c
   opensbi/lib/utils/ipi/fdt_ipi.c
   opensbi/lib/utils/ipi/fdt_ipi_clint.c
   opensbi/lib/utils/irqchip/fdt_irqchip.c

@@ -21,6 +21,7 @@
 #include <sbi/sbi_platform.h> // Reference to header file in opensbi
 #include <sbi/sbi_init.h>     // Reference to header file in opensbi
 #include <sbi/sbi_ecall.h>    // Reference to header file in opensbi
+#include <sbi/sbi_trap.h>     // Reference to header file in opensbi
 
 //
 // Indicates the boot hart (PcdBootHartId) OpenSBI initialization is done.
@@ -434,7 +435,7 @@ EFI_STATUS EFIAPI TemporaryRamDone (
 STATIC int SbiEcallFirmwareHandler (
   IN  unsigned long         ExtId,
   IN  unsigned long         FuncId,
-  IN  unsigned long        *Args,
+  IN  CONST struct sbi_trap_regs *TrapRegs,
   OUT unsigned long        *OutVal,
   OUT struct sbi_trap_info *OutTrap
   )
@@ -446,7 +447,7 @@ STATIC int SbiEcallFirmwareHandler (
       *OutVal = (unsigned long) sbi_scratch_thishart_ptr();
       break;
     case SBI_EXT_FW_MSCRATCH_HARTID_FUNC:
-      *OutVal = (unsigned long) sbi_hartid_to_scratch (Args[0]);
+      *OutVal = (unsigned long) sbi_hartid_to_scratch (TrapRegs->a0);
       break;
     default:
       Ret = SBI_ENOTSUPP;
@@ -557,6 +558,12 @@ VOID EFIAPI PeiCore (
              &FirmwareContext
              ));
   ThisSbiPlatform->firmware_context = (unsigned long)&FirmwareContext;
+
+  //
+  // Save Flattened Device tree in firmware context
+  //
+  FirmwareContext.FlattenedDeviceTree = FuncArg1;
+
   //
   // Set firmware context Hart-specific pointer
   //
@@ -611,7 +618,8 @@ LaunchPeiCore (
   PeiCoreMode = FixedPcdGet32 (PcdPeiCorePrivilegeMode);
   if (PeiCoreMode == PRV_S) {
     DEBUG ((DEBUG_INFO, "%a: Switch to S-Mode for PeiCore.\n", __FUNCTION__));
-    sbi_hart_switch_mode (ThisHartId, FuncArg1, (UINTN)PeiCore, PRV_S, FALSE);
+    PeiCore (ThisHartId, FuncArg1);
+    //sbi_hart_switch_mode (ThisHartId, FuncArg1, (UINTN)PeiCore, PRV_S, FALSE);
   } else if (PeiCoreMode == PRV_M) {
     DEBUG ((DEBUG_INFO, "%a: Switch to M-Mode for PeiCore.\n", __FUNCTION__));
     PeiCore (ThisHartId, FuncArg1);
@@ -686,6 +694,21 @@ VOID EFIAPI SecCoreStartUpWithStack(
   UINT64 NonBootHartMessageLockValue;
   EFI_RISCV_FIRMWARE_CONTEXT_HART_SPECIFIC *HartFirmwareContext;
 
+  if (FixedPcdGet32 (PcdDeviceTreeAddress)) {
+      Scratch->next_arg1 = *((unsigned long *)FixedPcdGet32 (PcdDeviceTreeAddress));
+  } else if (FixedPcdGet32 (PcdRiscVDtbFvBase)) {
+      // TODO: This probably isn't the most elegant way to do this.
+      Scratch->next_arg1 = (unsigned long )FixedPcdGet32 (PcdRiscVDtbFvBase)
+          + 0x48  // FV header size
+          + 0x18  // File header size
+          + 0x04; // Section header size
+  } else {
+      DEBUG ((DEBUG_ERROR, "Must use DTB either from memory or compiled in FW. PCDs configured incorrectly.\n"));
+      ASSERT (FALSE);
+  }
+  DEBUG ((DEBUG_INFO, "DTB address: 0x%08x\n", Scratch->next_arg1));
+  DEBUG ((DEBUG_INFO, "DTB: 0x%08x\n", *((unsigned long *) Scratch->next_arg1)));
+
   //
   // Setup EFI_RISCV_FIRMWARE_CONTEXT_HART_SPECIFIC for each hart.
   //
@@ -701,7 +724,7 @@ VOID EFIAPI SecCoreStartUpWithStack(
 
   if (HartId == FixedPcdGet32(PcdBootHartId)) {
     Scratch->next_addr = (UINTN)LaunchPeiCore;
-    Scratch->next_mode = PRV_M;
+    Scratch->next_mode = PRV_S;
     DEBUG ((DEBUG_INFO, "%a: Initializing OpenSBI library for booting hart %d\n", __FUNCTION__, HartId));
     sbi_init(Scratch);
   }

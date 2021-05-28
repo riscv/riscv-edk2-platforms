@@ -1,0 +1,14 @@
+# action.yml
+name: 'qemu-system-riscv64'
+description: 'Run with QEMU RISCV-64 system emulation'
+inputs:
+  entrypoint:
+    description: 'Which script to test with QEMU'
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  # The docker action only supports variables in args, so we can't directly use entrypoint here
+  # See https://github.community/t/expressions-in-docker-uri/16271
+  args:
+    - ${{ inputs.entrypoint }}
